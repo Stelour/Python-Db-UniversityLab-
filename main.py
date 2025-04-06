@@ -7,18 +7,26 @@ with sqlite3.connect('AmDB.db') as con:
     cur.execute("CREATE TABLE IF NOT EXISTS people (name TEXT, photo BLOB, bio TEXT)")
 
 def change_in_db(new_name, directory, bio, old_name):
-    with open(directory, 'rb') as photo:
-        image = photo.read()
-        data = (new_name, image, bio, old_name)
-        with sqlite3.connect('AmDB.db') as con: 
-            con.execute("""UPDATE people SET name = ?, photo = ?, bio = ? WHERE name = ?""", data)
+    try:
+        with open(directory, 'rb') as photo:
+            image = photo.read()
+            data = (new_name, image, bio, old_name)
+            with sqlite3.connect('AmDB.db') as con: 
+                con.execute("""UPDATE people SET name = ?, photo = ?, bio = ? WHERE name = ?""", data)
+    except Exception as e:
+        print(f"Error saving image: {e}")
+        messagebox.showerror("Ошибка", "Не удалось сохранить изображение")
 
 def input_in_db(name, directory, bio):
-    with open(directory, 'rb') as photo:
-        image = photo.read()
-        data = (name, image, bio)
-        with sqlite3.connect('AmDB.db') as con: 
-            con.execute("""INSERT INTO people (name, photo, bio) VALUES (?, ?, ?)""", data)
+    try:
+        with open(directory, 'rb') as photo:
+            image = photo.read()
+            data = (name, image, bio)
+            with sqlite3.connect('AmDB.db') as con: 
+                con.execute("""INSERT INTO people (name, photo, bio) VALUES (?, ?, ?)""", data)
+    except Exception as e:
+        print(f"Error saving image: {e}")
+        messagebox.showerror("Ошибка", "Не удалось сохранить изображение")
 
 def get_db():
     list_name, list_photo, list_bio = [], [], []
@@ -29,8 +37,22 @@ def get_db():
         
         data = con.execute("SELECT photo FROM people")
         for row in data:
-            photo = PhotoImage(data=row[0])
-            list_photo.append(photo)
+            try:
+                if row[0] is None:
+                    print("Warning: Empty image data in database")
+                    empty_image = PhotoImage()
+                    list_photo.append(empty_image)
+                    continue
+                    
+                # Create PhotoImage from BLOB data
+                photo = PhotoImage(data=row[0])
+                list_photo.append(photo)
+            except Exception as e:
+                print(f"Error loading image: {e}")
+                print(f"Image data length: {len(row[0]) if row[0] else 0}")
+                # Create empty image if loading fails
+                empty_image = PhotoImage()
+                list_photo.append(empty_image)
         
         data = con.execute("SELECT bio FROM people")
         for row in data: 
@@ -79,7 +101,7 @@ Ctrl + X - Выход из программы.'''
 
 def about_program(event = NONE):
     messagebox.showinfo("О программе", f"""База данных Знаменитые композиторы России
-(c) Смирнов Тимофей Евгеньевич, Россия, 2023""")
+(c) Иванов Иван Иванович, Россия, 2023""")
 
 def bar():
     menubar = Menu(root)
